@@ -1,0 +1,53 @@
+
+theory Lemma
+  imports Main "HOL-Probability.Probability_Mass_Function" "HOL-Probability.Product_PMF"
+begin
+
+fun random_subset :: "'a set \<Rightarrow> real \<Rightarrow> ('a \<Rightarrow> bool) pmf" where
+  "random_subset V p = Pi_pmf V False (\<lambda>_. bernoulli_pmf p)"
+
+fun random_subsets :: "'a set \<Rightarrow> real \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> ('a \<Rightarrow> bool)) pmf" where
+  "random_subsets V p n = Pi_pmf {k::nat. k \<le> n} (\<lambda>_. False) (\<lambda>_. random_subset V p)"
+
+fun intersect :: "'a set \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> nat" where
+  "intersect U = (\<lambda>S. card {u\<in>U. S u})"
+
+fun intersect2 :: "'a set \<Rightarrow> (nat \<Rightarrow> ('a \<Rightarrow> bool)) \<Rightarrow> (nat \<Rightarrow> nat)" where
+  "intersect2 U = (\<lambda>f i. card {u\<in>U. (f i) u})"
+
+fun select :: "'a \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> 'b" where
+  "select x f = f x"
+
+fun aux :: "'a set \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> bool) pmf \<Rightarrow> nat \<Rightarrow> real" where
+  "aux U U' Ti xi = measure_pmf.prob Ti {S \<in> space Ti. intersect U S = xi \<and> intersect U' S = xi}"
+
+fun aux2 :: "'a set \<Rightarrow> 'a set \<Rightarrow> (nat \<Rightarrow> ('a \<Rightarrow> bool)) pmf \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> real" where
+  "aux2 U U' T x = measure_pmf.prob T {S \<in> space T. intersect2 U S = x \<and> intersect2 U' S = x}"
+
+lemma "let T = (random_subsets V p n) in pmf (map_pmf (intersect2 U) T) x = 
+        (\<Prod>i\<le>n. pmf (map_pmf ((intersect U) \<circ> (select i)) T) (x i))" oops
+
+lemma "(Pi {i::nat. i\<le>n} (\<lambda>i. {S. intersect U S = x i \<and> intersect U' S = x i})) = {Ss. intersect2 U Ss = x \<and> intersect2 U' Ss = x}"
+proof
+  show "(\<Pi> i\<in>{i. i \<le> n}. {S. intersect U S = x i \<and> intersect U' S = x i})
+    \<subseteq> {Ss. intersect2 U Ss = x \<and> intersect2 U' Ss = x}"
+  proof
+    fix Ss
+    assume "Ss \<in> (\<Pi> i\<in>{i. i \<le> n}. {S. intersect U S = x i \<and> intersect U' S = x i})"
+    hence "\<forall>i\<le>n. Ss i \<in> {S. intersect U S = x i \<and> intersect U' S = x i}" unfolding Pi_def try0
+
+lemma 
+  assumes T_def: "T = (random_subsets V p n)" 
+  shows "measure_pmf.prob T (Pi {i::nat. i\<le>n} (\<lambda>i. {S. intersect U S = x i \<and> intersect U' S = x i})) =
+         (\<Prod>i\<le>n. let Ti = (map_pmf (select i) T) in
+         measure_pmf.prob Ti {S. intersect U S = x i \<and> intersect U' S = x i})"
+proof -
+  
+
+
+
+fun space_change :: "('a \<Rightarrow> 'b) \<Rightarrow> 'b pmf \<Rightarrow> 'a pmf" where
+  "space_change f p = Abs_pmf (measure_of (f -` (space p)) (((-`) f) ` sets p) (comp (emeasure p) ((`) f)))"
+
+
+end
