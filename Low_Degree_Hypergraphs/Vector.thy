@@ -51,7 +51,7 @@ lemma domain_empty_iff_len_0: "domain v = {} \<longleftrightarrow> Vector.finite
 
 lemma domain_empty_iff_range_empty: "domain v = {} \<longleftrightarrow> range v = {}" unfolding domain_def range_def by blast
 
-lemma count_subset_domain: "count v x = card {i\<in>domain v. v i = Some x}" unfolding domain_def count_def vimage_def by (simp, meson) 
+lemma count_domain: "count v x = card {i\<in>domain v. v i = Some x}" unfolding domain_def count_def vimage_def by (simp, meson) 
 
 lemma not_in_domain_consecutive: 
   assumes "vector v" and "n \<notin> domain v"
@@ -100,7 +100,7 @@ lemma finite_domain:
 lemma infinite_domain:
   assumes "vector v" and "Vector.infinite v"
   shows "domain v = UNIV" 
-  by (metis UNIV_eq_I finite_iff_domain_finite finite_nat_set_iff_bounded_le in_domain_consecutive[OF assms(1)] nle_le assms(2))
+by (metis UNIV_eq_I finite_iff_domain_finite finite_nat_set_iff_bounded_le in_domain_consecutive[OF assms(1)] nle_le assms(2))
 
 lemma infinite_len_0: "Vector.infinite v \<Longrightarrow> length v = 0"
   by (metis card_eq_0_iff finite_iff_domain_finite length_def)
@@ -114,6 +114,11 @@ proof -
   from finite_domain[OF assms] have "domain v = {i. i < length v}" by (simp add: domain_def)
   then show "domain (v |x n) = {i. i < min (length v) n}" using domain_cut by auto
 qed
+
+lemma in_domain:
+  assumes "vector v" and "Vector.finite v" and "i < length v"
+  shows "i \<in> domain v"
+  using assms finite_domain by blast
 
 lemma finite_cut: "Vector.finite (v |x n)" unfolding finite_def cut_def by fastforce
 
@@ -131,7 +136,6 @@ proof-
   from domain_cut[of v n] have "domain (v |x n) \<subseteq> {i. i < n}" by blast
   from card_mono[OF _ this] card_Collect_less_nat[of n] show ?thesis unfolding length_def by fastforce
 qed
-  
 
 lemma len_cut_eq: 
   assumes "vector v" and "length v \<ge> n"
@@ -164,6 +168,25 @@ lemma cut_eq:
   assumes "i < n"
   shows "(v |x n) i = v i"
   unfolding cut_def using assms by simp
+
+lemma count_cut:
+  assumes "vector v" and "Vector.finite v"
+  shows "count v x = count (v |x n) x + card {i \<in> domain v. i \<ge> n \<and> v i = Some x}"
+proof -
+  have h0: "finite {i. i < length v \<and> i < n \<and> v i = Some x}" by fast
+  have h1: "finite {i. i < length v \<and> i \<ge> n \<and> v i = Some x}" by fast
+  have h2: "{i. i < length v \<and> i < n \<and> v i = Some x} \<inter> {i. i < length v \<and> i \<ge> n \<and> v i = Some x} = {}" by auto
+  have h3: "{i. i < length v \<and> v i = Some x} = {i. i < length v \<and> i < n \<and> v i = Some x} \<union> {i. i < length v \<and> i \<ge> n \<and> v i = Some x}" by fastforce
+
+  have "count v x = card {i \<in> domain v. v i = Some x}" by (simp only: count_domain)
+  also have "... = card {i. i < length v \<and> v i = Some x}" by (simp add: finite_domain[OF assms])
+  also have "... = card {i. i < length v \<and> i < n \<and> v i = Some x} + card {i. i < length v \<and> i \<ge> n \<and> v i = Some x}" using card_Un_disjoint[OF h0 h1 h2] h3 by argo
+  also have "... = card {i. i < length v \<and> i < n \<and> (v |x n) i = Some x} + card {i. i < length v \<and> i \<ge> n \<and> v i = Some x}" by (metis cut_eq[of _ n v])
+  also have "... = card {i \<in> domain (v |x n). (v |x n) i = Some x} + card {i \<in> domain v. i \<ge> n \<and> v i = Some x}" by (simp add: finite_domain[OF assms] domain_cut_finite[OF assms])
+  finally show ?thesis by (simp add: count_domain)
+qed
+
+
 
 lemma vector_equal: 
   assumes "vector v" and "Vector.finite v" and "length v = n" and "vector w" and "Vector.finite w" and "length w = n" and "\<forall>i<n. v i = w i"
@@ -220,37 +243,132 @@ proof
   qed
 qed
 
+lemma vector_Ball_range: "(\<forall>x\<in>range v. P x) \<longleftrightarrow> (\<forall>i. case v i of Some x \<Rightarrow> P x | None \<Rightarrow> True)"
+  unfolding range_def by (simp split: option.splits, fastforce)
+
 lemma zero_one_vector_prod:
-  shows "\<lbrakk>vector x; Vector.finite x; length x = n; range x \<subseteq> {0, 1}\<rbrakk> \<Longrightarrow> (\<Prod>i\<in>{i. i<(n::nat)}. (N::real)^(the (x i))) = N^(count x 1)"
+  shows "\<lbrakk>vector x; Vector.finite x; length x = n; range x \<subseteq> {0, 1}\<rbrakk> \<Longrightarrow> (\<Prod>i\<in>{i. i<(n::nat)}. (N::'a::comm_semiring_1)^(the (x i))) = N^(count x 1)"
 proof (induction n arbitrary: x)
   case 0
   from 0(2,3) domain_empty_iff_len_0[of x] have "domain x = {}" by blast
-  then have "count x 1 = 0" using count_subset_domain[of x 1] by simp
+  then have "count x 1 = 0" using count_domain[of x 1] by simp
   with 0 show ?case unfolding count_def by simp
 next
   case (Suc n)
   let ?x' = "x |x n"
   from len_cut_eq[OF Suc(2)] Suc(4) have a0: "length (x |x n) = n" by simp
-  from Suc(1)[OF cut_is_vector[OF Suc(2), of n] finite_cut a0] range_cut Suc(5) have IH: "(\<Prod>i\<in>{i. i < n}. N ^ the ((x |x n) i)) = N ^ Vector.count (x |x n) 1" by fast
-
+  from Suc(1)[OF cut_is_vector[OF Suc(2), of n] finite_cut a0] range_cut Suc(5) have IH: "(\<Prod>i\<in>{i. i < n}. N ^ the ((x |x n) i)) = N ^ count (x |x n) 1" by fast
+  note semiring_normalization_rules(26)[of N]
   have h0: "{i. i < Suc n} - {n} = {i. i < n}" by fastforce
+  have h1: "count (x |x n) 1 + the (x n) = count x 1"
+  proof (cases "x n")
+    case None
+    with less_len_is_Some[OF Suc(2,3), of n] Suc(4) show ?thesis by simp
+  next
+    case (Some a)
+    show ?thesis
+    proof (cases a)
+      case 0
+      have a0: "{i \<in> domain x. i \<ge> n \<and> x i = Some 1} = {}"
+      proof 
+        show "{i \<in> domain x. i \<ge> n \<and> x i = Some 1} \<subseteq> {}"
+        proof
+          fix i assume "i \<in> {i \<in> domain x. i \<ge> n \<and> x i = Some 1}" hence a0: "i < Suc n" and a1: "i \<ge> n" and a2: "x i = Some 1" using finite_domain[OF Suc(2,3)] Suc(4) by simp+
+          from a0 a1 have a3: "i = n" by linarith
+          from 0 a2 a3 Some show "i \<in> {}" by fastforce
+        qed
+      qed (simp)
+      have "count (x |x n) 1 = count (x |x n) 1 + card {i \<in> domain x. i \<ge> n \<and> x i = Some 1}" by (simp only: a0, simp)
+      also have "... = count x 1" by (simp only: count_cut[OF Suc(2,3), symmetric])
+      finally show ?thesis using 0 Some by simp
+    next
+      case _: (Suc nat) hence "a \<noteq> 0" by simp
+      with Suc(5) Some have a_is_1: "a = 1" unfolding range_def by blast
+
+      have a0: "{i \<in> domain x. i \<ge> n \<and> x i = Some 1} = {n}"
+      proof 
+        show "{i \<in> domain x. i \<ge> n \<and> x i = Some 1} \<subseteq> {n}"
+        proof
+          fix i assume "i \<in> {i \<in> domain x. i \<ge> n \<and> x i = Some 1}" hence a0: "i < Suc n" and a1: "i \<ge> n" and a2: "x i = Some 1" using finite_domain[OF Suc(2,3)] Suc(4) by simp+
+          from a0 a1 have a3: "i = n" by linarith
+          from a_is_1 a2 a3 Some show "i \<in> {n}" by fastforce
+        qed
+      qed (simp add: a_is_1 Some in_domain[OF Suc(2,3), of n] Suc(4))
+      have "count (x |x n) 1 + 1 = count (x |x n) 1 + card {i \<in> domain x. i \<ge> n \<and> x i = Some 1}" by (simp only: a0, simp)
+      also have "... = count x 1" by (simp only: count_cut[OF Suc(2,3), symmetric])
+      finally show ?thesis using a_is_1 Some by simp
+    qed
+  qed
+
   have "(\<Prod>i\<in>{i. i < Suc n}. N ^ the (x i)) = (\<Prod>i\<in>{i. i < Suc n} - {n}. N ^ the (x i)) * (\<Prod>i\<in>{n}. N ^ the (x i))" by (simp add: prod.subset_diff[of "{n}" "{i. i < Suc n}" "\<lambda>i. N ^ the (x i)"])
   also have "... = (\<Prod>i\<in>{i. i < n}. N ^ the (x i)) * (\<Prod>i\<in>{n}. N ^ the (x i))" by (simp only: h0)
   also have "... = (\<Prod>i\<in>{i. i < n}. N ^ the (x i)) * (N ^ the (x n))" by fastforce
   also have "... = (\<Prod>i\<in>{i. i < n}. N ^ the ((x |x n) i)) * (N ^ the (x n))" by (simp add: cut_eq[of _ n x])
-  also have "... = N ^ (Vector.count (x |x n) 1 +  the (x n))" using semiring_normalization_rules(26)[of N] apply (simp add: IH)
-  show ?case sorry
+  also have "... = N ^ (count (x |x n) 1 + the (x n))" by (simp add: semiring_normalization_rules(26) IH)
+  finally show ?case by (simp only: h1)
 qed
 
 lemma zero_one_vector_sum:
-  assumes "vector x" and "Vector.finite x" and "length x = n" and "range x = {0, 1}"
-  shows "(\<Sum>i\<in>{i. i<(n::nat)}. N * (the (x i))) = N * (count x 1)"
+  shows "\<lbrakk>vector x; Vector.finite x; length x = n; range x \<subseteq> {0, 1}\<rbrakk> \<Longrightarrow> (\<Sum>i\<in>{i. i<(n::nat)}. N * (the (x i))) = N * (count x 1)"
 proof (induction n arbitrary: x)
   case 0
-  then show ?case sorry
+  from 0(2,3) domain_empty_iff_len_0[of x] have "domain x = {}" by blast
+  then have "count x 1 = 0" using count_domain[of x 1] by simp
+  with 0 show ?case unfolding count_def by simp
 next
   case (Suc n)
-  show ?case sorry
+  let ?x' = "x |x n"
+  from len_cut_eq[OF Suc(2)] Suc(4) have a0: "length (x |x n) = n" by simp
+  from Suc(1)[OF cut_is_vector[OF Suc(2), of n] finite_cut a0] range_cut Suc(5) have IH: "(\<Sum>i\<in>{i. i < n}. N * the ((x |x n) i)) = N * count (x |x n) 1" by fast
+  note semiring_normalization_rules(26)[of N]
+  have h0: "{i. i < Suc n} - {n} = {i. i < n}" by fastforce
+  have h1: "count (x |x n) 1 + the (x n) = count x 1"
+  proof (cases "x n")
+    case None
+    with less_len_is_Some[OF Suc(2,3), of n] Suc(4) show ?thesis by simp
+  next
+    case (Some a)
+    show ?thesis
+    proof (cases a)
+      case 0
+      have a0: "{i \<in> domain x. i \<ge> n \<and> x i = Some 1} = {}"
+      proof 
+        show "{i \<in> domain x. i \<ge> n \<and> x i = Some 1} \<subseteq> {}"
+        proof
+          fix i assume "i \<in> {i \<in> domain x. i \<ge> n \<and> x i = Some 1}" hence a0: "i < Suc n" and a1: "i \<ge> n" and a2: "x i = Some 1" using finite_domain[OF Suc(2,3)] Suc(4) by simp+
+          from a0 a1 have a3: "i = n" by linarith
+          from 0 a2 a3 Some show "i \<in> {}" by fastforce
+        qed
+      qed (simp)
+      have "count (x |x n) 1 = count (x |x n) 1 + card {i \<in> domain x. i \<ge> n \<and> x i = Some 1}" by (simp only: a0, simp)
+      also have "... = count x 1" by (simp only: count_cut[OF Suc(2,3), symmetric])
+      finally show ?thesis using 0 Some by simp
+    next
+      case _: (Suc nat) hence "a \<noteq> 0" by simp
+      with Suc(5) Some have a_is_1: "a = 1" unfolding range_def by blast
+
+      have a0: "{i \<in> domain x. i \<ge> n \<and> x i = Some 1} = {n}"
+      proof 
+        show "{i \<in> domain x. i \<ge> n \<and> x i = Some 1} \<subseteq> {n}"
+        proof
+          fix i assume "i \<in> {i \<in> domain x. i \<ge> n \<and> x i = Some 1}" hence a0: "i < Suc n" and a1: "i \<ge> n" and a2: "x i = Some 1" using finite_domain[OF Suc(2,3)] Suc(4) by simp+
+          from a0 a1 have a3: "i = n" by linarith
+          from a_is_1 a2 a3 Some show "i \<in> {n}" by fastforce
+        qed
+      qed (simp add: a_is_1 Some in_domain[OF Suc(2,3), of n] Suc(4))
+      have "count (x |x n) 1 + 1 = count (x |x n) 1 + card {i \<in> domain x. i \<ge> n \<and> x i = Some 1}" by (simp only: a0, simp)
+      also have "... = count x 1" by (simp only: count_cut[OF Suc(2,3), symmetric])
+      finally show ?thesis using a_is_1 Some by simp
+    qed
+  qed
+
+  have "(\<Sum>i\<in>{i. i < Suc n}. N * the (x i)) = (\<Sum>i\<in>{i. i < Suc n} - {n}. N * the (x i)) + (\<Sum>i\<in>{n}. N * the (x i))" by (simp add: sum.subset_diff[of "{n}" "{i. i < Suc n}" "\<lambda>i. N * the (x i)"])
+  also have "... = (\<Sum>i\<in>{i. i < n}. N * the (x i)) + (\<Sum>i\<in>{n}. N * the (x i))" by (simp only: h0)
+  also have "... = (\<Sum>i\<in>{i. i < n}. N * the (x i)) + (N * the (x n))" by fastforce
+  also have "... = (\<Sum>i\<in>{i. i < n}. N * the ((x |x n) i)) + (N * the (x n))" by (simp add: cut_eq[of _ n x])
+  also have "... = N * (count (x |x n) 1 + the (x n))" by (simp add: semiring_normalization_rules IH)
+  finally show ?case by (simp only: h1)
 qed
+
 
 end

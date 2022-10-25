@@ -243,7 +243,8 @@ proof
   qed
 qed
 
-
+lemma vector_Ball_range: "(\<forall>x\<in>range v. P x) \<longleftrightarrow> (\<forall>i. case v i of Some x \<Rightarrow> P x | None \<Rightarrow> True)"
+  unfolding range_def by (simp split: option.splits, fastforce)
 
 lemma zero_one_vector_prod:
   shows "\<lbrakk>vector x; Vector.finite x; length x = n; range x \<subseteq> {0, 1}\<rbrakk> \<Longrightarrow> (\<Prod>i\<in>{i. i<(n::nat)}. (N::'a::comm_semiring_1)^(the (x i))) = N^(count x 1)"
@@ -317,5 +318,6 @@ next
   case (Suc n)
   show ?case sorry
 qed
+
 
 end
