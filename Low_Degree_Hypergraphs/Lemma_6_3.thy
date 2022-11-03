@@ -1,39 +1,55 @@
-
 theory Lemma_6_3
-  imports Main Lemma_6_3_Extra Vector "HOL-Probability.Probability_Mass_Function" "HOL-Probability.Product_PMF"
+  imports Main Vector "HOL-Probability.Probability_Mass_Function" "HOL-Probability.Product_PMF"
 begin
+
+fun random_subset :: "'a set \<Rightarrow> real \<Rightarrow> ('a \<Rightarrow> bool) pmf" where
+  "random_subset V p = Pi_pmf V False (\<lambda>_. bernoulli_pmf p)"
+
+fun vector_of :: "'a pmf \<Rightarrow> nat \<Rightarrow> 'a vector pmf" where
+  "vector_of f n = Pi_pmf {i::nat. i < n} None (\<lambda>i. if i < n then map_pmf Some f else return_pmf None)"
+
+fun subsetof :: "('a \<Rightarrow> bool) \<Rightarrow> 'a set \<Rightarrow> bool" (infixl "\<sqsubseteq>" 60) where
+  "S \<sqsubseteq> V = (\<forall>u. S u \<longrightarrow> u \<in> V)"
+
+lemma subsetof_Pow: "{S. S \<sqsubseteq> X} = (\<lambda>S x. x \<in> S) ` Pow X" by force
+lemma finite_fPow: "finite X \<Longrightarrow> finite {S. S \<sqsubseteq> X}" by (metis subsetof_Pow finite_Pow_iff finite_imageI)
+
+lemma measure_Pi_pmf_PiE_dflt_subset:
+  assumes "U \<subseteq> V" and "finite V"
+  shows "measure_pmf.prob (Pi_pmf V dflt p) (PiE_dflt V dflt (\<lambda>x. if x \<in> U then B x else UNIV)) = (\<Prod>x\<in>U. measure_pmf.prob (p x) (B x))" 
+  by (simp add: measure_Pi_pmf_PiE_dflt[OF assms(2)] prod.subset_diff[OF assms])
 
 lemma lemma_6_3:
   assumes "0 \<le> p" and p_less_1: "p < 1" and "finite V" and "U \<subseteq> V" and "U' \<subseteq> V" and 
           card_U: "card U = d" and card_U': "card U' = d" and card_U_Int_U': "card (U \<inter> U') = r" and 
-          fin_x: "Vector.finite x" and vect_x: "vector x" and rng_x: "range x \<subseteq> {0, 1}" and len_x: "length x = n"
-  shows "measure_pmf.prob (vector_of (random_subset V p) n) {Ss. map_vector (intersect U) Ss = x \<and> map_vector (intersect U') Ss = x \<and> (\<forall>S\<in>range Ss. S \<sqsubseteq> V)} = ((1 - p) ^ ((2 * d - r) * n)) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(count x 1)"
+          fin_x: "finite (dom x)" and vect_x: "vector x" and ran_x: "ran x \<subseteq> {0, 1}" and len_x: "len x = n"
+  shows "measure_pmf.prob (vector_of (random_subset V p) n) {Ss. map_vector ((\<lambda>S. card {u\<in>U. S u})) Ss = x \<and> map_vector ((\<lambda>S. card {u\<in>U'. S u})) Ss = x \<and> (\<forall>S\<in>ran Ss. S \<sqsubseteq> V)} = ((1 - p) ^ ((2 * d - r) * n)) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(count x 1)"
 proof -
   note finite_U = finite_subset[OF assms(4) assms(3)]
   note finite_U' = finite_subset[OF assms(5) assms(3)]
   have bernoulli_True: "pmf (bernoulli_pmf p) True = p" and bernoulli_False: "pmf (bernoulli_pmf p) False = (1 - p)" using pmf_bernoulli_True pmf_bernoulli_False assms(1,2) by simp+
 
-  have Pi_set_vector: "{Ss. map_vector (intersect U) Ss = x \<and> map_vector (intersect U') Ss = x \<and> (\<forall>S\<in>range Ss. S \<sqsubseteq> V)} = (PiE_dflt {i. i<n} None (\<lambda>i. {S. map_option (intersect U) S = x i \<and> map_option (intersect U') S = x i \<and> (case S of Some s \<Rightarrow> s \<sqsubseteq> V | None \<Rightarrow> True)}))" (is "?lhs = ?rhs")
+  have Pi_set_vector: "{Ss. map_vector (\<lambda>S. card {u\<in>U. S u}) Ss = x \<and> map_vector (\<lambda>S. card {u\<in>U'. S u}) Ss = x \<and> (\<forall>S\<in>ran Ss. S \<sqsubseteq> V)} = (PiE_dflt {i. i<n} None (\<lambda>i. {S. map_option (\<lambda>S. card {u\<in>U. S u}) S = x i \<and> map_option (\<lambda>S. card {u\<in>U'. S u}) S = x i \<and> (case S of Some s \<Rightarrow> s \<sqsubseteq> V | None \<Rightarrow> True)}))" (is "?lhs = ?rhs")
   proof
     show "?lhs \<subseteq> ?rhs"
     proof 
-      fix Ss assume asm: "Ss \<in> ?lhs" hence a0: "map_vector (intersect U) Ss = x" and a1: "map_vector (intersect U') Ss = x" and a2: "(\<forall>S\<in>range Ss. S \<sqsubseteq> V)" by blast+
-      from a0 have a3: "\<forall>i<n. map_option (intersect U) (Ss i) = x i" by fastforce
-      from a1 have a4: "\<forall>i<n. map_option (intersect U') (Ss i) = x i" by fastforce
+      fix Ss assume asm: "Ss \<in> ?lhs" hence a0: "map_vector (\<lambda>S. card {u\<in>U. S u}) Ss = x" and a1: "map_vector (\<lambda>S. card {u\<in>U'. S u}) Ss = x" and a2: "(\<forall>S\<in>ran Ss. S \<sqsubseteq> V)" by blast+
+      from a0 have a3: "\<forall>i<n. map_option (\<lambda>S. card {u\<in>U. S u}) (Ss i) = x i" by fastforce
+      from a1 have a4: "\<forall>i<n. map_option (\<lambda>S. card {u\<in>U'. S u}) (Ss i) = x i" by fastforce
 
       from map_vector_vector vect_x a0 have a5: "vector Ss" by auto
-      from map_vector_fin fin_x a0 have a6: "Vector.finite Ss" by auto 
-      from map_vector_len len_x a0 have a7: "length Ss = n" by auto
-      from a5 a6 a7 have a8: "\<forall>i\<ge>n. Ss i = None" using ge_len_is_None by blast
-      from a2 vector_Ball_range have "\<forall>i. (case (Ss i) of Some s \<Rightarrow> s \<sqsubseteq> V | None \<Rightarrow> True)" by fastforce
+      from map_vector_fin fin_x a0 have a6: "finite (dom Ss)" by auto 
+      from map_vector_len len_x a0 have a7: "len Ss = n" by auto
+      from fin_vect_None_iff[OF a5 a6] a7 have a8: "\<forall>i\<ge>n. Ss i = None" by blast
+      from a2 vector_Ball_ran have "\<forall>i. (case (Ss i) of Some s \<Rightarrow> s \<sqsubseteq> V | None \<Rightarrow> True)" by fast
       with a3 a4 a8 show "Ss \<in> ?rhs" unfolding PiE_dflt_def by simp
     qed
   next
     show "?rhs \<subseteq> ?lhs"
     proof
       fix Ss assume "Ss \<in> ?rhs" 
-      hence a0: "\<forall>i<n. map_option (intersect U) (Ss i) = x i" and a1: "\<forall>i<n. map_option (intersect U') (Ss i) = x i" and a2: "\<forall>i\<ge>n. Ss i = None" and a3: "\<forall>i<n. (case (Ss i) of Some s \<Rightarrow> s \<sqsubseteq> V | None \<Rightarrow> True)" unfolding PiE_dflt_def by auto
-      from a3 vector_Ball_range[of "Ss" "\<lambda>S. subsetof S V"] have "(\<forall>S\<in>range Ss. S \<sqsubseteq> V)" by (metis a2 linorder_not_le option.case_eq_if)
+      hence a0: "\<forall>i<n. map_option (\<lambda>S. card {u\<in>U. S u}) (Ss i) = x i" and a1: "\<forall>i<n. map_option (\<lambda>S. card {u\<in>U'. S u}) (Ss i) = x i" and a2: "\<forall>i\<ge>n. Ss i = None" and a3: "\<forall>i<n. (case (Ss i) of Some s \<Rightarrow> s \<sqsubseteq> V | None \<Rightarrow> True)" unfolding PiE_dflt_def by auto
+      from a3 vector_Ball_ran[of "Ss" "\<lambda>S. subsetof S V"] have "(\<forall>S\<in>ran Ss. S \<sqsubseteq> V)" by (metis a2 linorder_not_le option.case_eq_if)
       with map_vector_inverse[OF vect_x fin_x len_x a0 a2] map_vector_inverse[OF vect_x fin_x len_x a1 a2] show "Ss \<in> ?lhs" by simp
     qed
   qed
@@ -56,12 +72,12 @@ proof -
     qed
   qed
 
-  have inner: "i < n \<Longrightarrow> measure_pmf.prob (random_subset V p) {S. Some (intersect U S) = x i \<and> Some (intersect U' S) = x i \<and> S \<sqsubseteq> V} 
+  have inner: "i < n \<Longrightarrow> measure_pmf.prob (random_subset V p) {S. Some (card {u\<in>U. S u}) = x i \<and> Some (card {u\<in>U'. S u}) = x i \<and> S \<sqsubseteq> V} 
         = (1 - p) ^ (2 * d - r) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(the (x i))" for i
   proof (cases "x i")
     case None
-    assume "i < n" hence "i < length x" using len_x by blast
-    from less_len_is_Some[OF vect_x fin_x this] None show ?thesis ..
+    assume "i < n" hence "i < len x" using len_x by blast
+    from fin_vect_Some_iff[OF vect_x fin_x] this None show ?thesis by blast
   next
     case (Some a)
     assume "i < n"
@@ -73,7 +89,7 @@ proof -
     show ?thesis
     proof (cases a)
       case 0
-      from 0 have "measure_pmf.prob (random_subset V p) {S. Some (intersect U S) = x i \<and> Some (intersect U' S) = x i \<and> S \<sqsubseteq> V}
+      from 0 have "measure_pmf.prob (random_subset V p) {S. Some (card {u\<in>U. S u}) = x i \<and> Some (card {u\<in>U'. S u}) = x i \<and> S \<sqsubseteq> V}
       =  measure_pmf.prob (random_subset V p) {S. card {u\<in>U. S u} = 0 \<and> card {u\<in>U'. S u} = 0 \<and> S \<sqsubseteq> V}" using Some by force
       also have "... = measure_pmf.prob (Pi_pmf V False (\<lambda>_. bernoulli_pmf p)) {S. card {u\<in>U. S u} = 0 \<and> card {u\<in>U'. S u} = 0 \<and> S \<sqsubseteq> V}" using Some by simp
       also have "... = measure_pmf.prob (Pi_pmf V False (\<lambda>_. bernoulli_pmf p)) (PiE_dflt V False (\<lambda>v. if v \<in> (U \<union> U') then {False} else UNIV))" by (simp only: Pi_set_x_i_is_0)
@@ -82,7 +98,7 @@ proof -
       finally show ?thesis by (simp add: 0 Some)
     next
       case (Suc nat) hence a_noteq_0: "a \<noteq> 0" by fast
-      with vector_range_Some[of x, OF Some] rng_x have a_is_1: "a = 1" by blast
+      with ran_def[of x] ran_x Some have a_is_1: "a = 1" by auto
       show ?thesis
       proof (cases "2 > 2 * d - r")
         case _: True
@@ -95,7 +111,7 @@ proof -
           proof
             assume "U = {} \<and> U' = {}" hence U_empty: "U = {}" and U'_empty: "U' = {}" by blast+
             hence d_is_0: "d = 0" and r_is_0: "r = 0" using assms(6, 8) by simp+
-            have "measure_pmf.prob (random_subset V p) {S. Some (intersect U S) = x i \<and> Some (intersect U' S) = x i \<and> S \<sqsubseteq> V}
+            have "measure_pmf.prob (random_subset V p) {S. Some (card {u\<in>U. S u}) = x i \<and> Some (card {u\<in>U'. S u}) = x i \<and> S \<sqsubseteq> V}
                            = measure_pmf.prob (Pi_pmf V False (\<lambda>_. bernoulli_pmf p)) {S. card {u\<in>U. S u} = 1 \<and> card {u\<in>U'. S u} = 1 \<and> S \<sqsubseteq> V}" by (simp add: a_is_1 Some)
             also have "... = measure_pmf.prob (Pi_pmf V False (\<lambda>_. bernoulli_pmf p)) {S. card {u\<in>{}. S u} = 1 \<and> card {u\<in>{}. S u} = 1 \<and> S \<sqsubseteq> V}" using U_empty U'_empty by fast
             also have "... = measure_pmf.prob (Pi_pmf V False (\<lambda>_. bernoulli_pmf p)) {}" by simp
@@ -130,7 +146,7 @@ proof -
             qed
           qed
             
-          from a_is_1 have "measure_pmf.prob (random_subset V p) {S. Some (intersect U S) = x i \<and> Some (intersect U' S) = x i \<and> S \<sqsubseteq> V}
+          from a_is_1 have "measure_pmf.prob (random_subset V p) {S. Some (card {u\<in>U. S u}) = x i \<and> Some (card {u\<in>U'. S u}) = x i \<and> S \<sqsubseteq> V}
                            = measure_pmf.prob (Pi_pmf V False (\<lambda>_. bernoulli_pmf p)) {S. card {u\<in>{v}. S u} = 1 \<and> S \<sqsubseteq> V}" using U_is_v U'_is_v Some by simp
           also have "... = measure_pmf.prob (Pi_pmf V False (\<lambda>_. bernoulli_pmf p)) (PiE_dflt V False (\<lambda>u. if u \<in> {v} then {True} else UNIV))" by (simp only: Pi_set_inner_exception)
           also have "... = pmf (bernoulli_pmf p) True" by (auto simp only: measure_Pi_pmf_PiE_dflt_subset[OF v_subseteq_V assms(3)] measure_pmf_single prod_constant, simp)
@@ -361,7 +377,7 @@ proof -
           finally show "?lhs = ?rhs" .
         qed
   
-        from a_is_1 have "measure_pmf.prob (random_subset V p) {S. Some (intersect U S) = x i \<and> Some (intersect U' S) = x i \<and> S \<sqsubseteq> V}
+        from a_is_1 have "measure_pmf.prob (random_subset V p) {S. Some (card {u\<in>U. S u}) = x i \<and> Some (card {u\<in>U'. S u}) = x i \<and> S \<sqsubseteq> V}
                    = measure_pmf.prob (Pi_pmf V False (\<lambda>_. bernoulli_pmf p)) {S. card {u\<in>U. S u} = 1 \<and> card {u\<in>U'. S u} = 1 \<and> S \<sqsubseteq> V}" using Some by simp
         also have "... = measure_pmf.prob (Pi_pmf V False (\<lambda>_. bernoulli_pmf p)) ?E1 + measure_pmf.prob (Pi_pmf V False (\<lambda>_. bernoulli_pmf p)) ?E2" using measure_pmf.finite_measure_Union[OF _ _ dsjnt_cases] two_cases by fastforce
         also have "... = card (U \<inter> U') * p * (1 - p) ^ (card (U \<union> U') - 1) + card (U - U') * card (U' - U) * p ^ 2 * (1 - p) ^ (card (U \<union> U') - 2)" by (simp only: case_1 case_2)
@@ -375,12 +391,12 @@ proof -
     qed
   qed
 
-  have "measure_pmf.prob (vector_of (random_subset V p) n) {Ss. map_vector (intersect U) Ss = x \<and> map_vector (intersect U') Ss = x \<and> (\<forall>S\<in>range Ss. S \<sqsubseteq> V)} = measure_pmf.prob (vector_of (random_subset V p) n) (PiE_dflt {i. i<n} None (\<lambda>i. {S. map_option (intersect U) S = x i \<and> map_option (intersect U') S = x i \<and> (case S of Some s \<Rightarrow> s \<sqsubseteq> V | None \<Rightarrow> True)}))" by (simp only: Pi_set_vector)
-  also have "... = (\<Prod>i\<in>{i. i<n}. measure_pmf.prob (random_subset V p) {S. Some (intersect U S) = x i \<and> Some (intersect U' S) = x i \<and> S \<sqsubseteq> V})" by (simp add: measure_Pi_pmf_PiE_dflt)
+  have "measure_pmf.prob (vector_of (random_subset V p) n) {Ss. map_vector (\<lambda>S. card {u\<in>U. S u}) Ss = x \<and> map_vector (\<lambda>S. card {u\<in>U'. S u}) Ss = x \<and> (\<forall>S\<in>ran Ss. S \<sqsubseteq> V)} = measure_pmf.prob (vector_of (random_subset V p) n) (PiE_dflt {i. i<n} None (\<lambda>i. {S. map_option (\<lambda>S. card {u\<in>U. S u}) S = x i \<and> map_option (\<lambda>S. card {u\<in>U'. S u}) S = x i \<and> (case S of Some s \<Rightarrow> s \<sqsubseteq> V | None \<Rightarrow> True)}))" by (simp only: Pi_set_vector)
+  also have "... = (\<Prod>i\<in>{i. i<n}. measure_pmf.prob (random_subset V p) {S. Some (card {u\<in>U. S u}) = x i \<and> Some (card {u\<in>U'. S u}) = x i \<and> S \<sqsubseteq> V})" by (simp add: measure_Pi_pmf_PiE_dflt)
   also have "... = (\<Prod>i\<in>{i. i<n}. (1 - p) ^ (2 * d - r) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(the (x i)))" using inner by fastforce
   also have "... = (\<Prod>i\<in>{i. i<n}. (1 - p) ^ (2 * d - r)) * ((\<Prod>i\<in>{i. i<n}. ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(the (x i))))" by (simp only: prod.distrib)
   also have "... = ((1 - p) ^ (2 * d - r))^n * ((\<Prod>i\<in>{i. i<n}. ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(the (x i))))" by (simp only: prod_constant card_Collect_less_nat)
-  also have "... = ((1 - p) ^ ((2 * d - r) * n)) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(count x 1)" by (simp only: zero_one_vector_prod[OF vect_x fin_x len_x rng_x] semiring_normalization_rules) 
+  also have "... = ((1 - p) ^ ((2 * d - r) * n)) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(count x 1)" by (simp only: zero_one_vector_prod[OF vect_x fin_x len_x ran_x] semiring_normalization_rules) 
   finally show ?thesis .
 qed
 
