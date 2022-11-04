@@ -2,11 +2,11 @@
     Author:     Ata Keskin, TU München
 *)
 
+section \<open>Lemmas involving the binomial coefficient\<close>
+
 theory Binomial_Lemmas
   imports Main
 begin
-
-section \<open>Lemmas involving the binomial coefficient\<close>
 
 lemma choose_mono:
   assumes "x \<le> y"

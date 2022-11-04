@@ -2,11 +2,11 @@
     Author:     Ata Keskin, TU München
 *)
 
+section "Lemmas involving the cardinality of sets"
+
 theory Card_Lemmas
   imports Main
 begin
-
-section "Lemmas involving the cardinality of sets"
 
 lemma card_diff: 
   assumes "finite A"
@@ -16,7 +16,6 @@ proof -
   have A_equ: "A = (A - B) \<union> (A \<inter> B)" and disjoint: "(A - B) \<inter> (A \<inter> B) = {}" by blast+
   from card_Un_disjoint[OF fin0 fin1 disjoint] A_equ show ?thesis by argo
 qed
-
 
 lemma card_Int_copy:
   assumes "finite X" and "A \<union> B \<subseteq> X" and "\<exists>f. inj_on f (A \<inter> B) \<and> (A \<union> B) \<inter> (f ` (A \<inter> B)) = {} \<and> f ` (A \<inter> B) \<subseteq> X"
@@ -53,37 +52,17 @@ proof
   from card_mono[OF assms(1) this] assms(2) show False by linarith
 qed
 
-lemma finite_subset_exists:
-  assumes "finite A"
-  shows "k \<le> card A \<Longrightarrow> \<exists>S\<in>Pow A. card S = k \<and> finite S"
-proof (induction k)
-  case 0
-  then show ?case by force
-next
-  case (Suc k)
-  from Suc(2) have k_le_card_A: "k \<le> card A" by linarith
-  from Suc(1)[OF k_le_card_A] rev_finite_subset[OF assms] obtain S
-    where S_subset_A: "S \<subseteq> A" and card_S_is_k: "card S = k" and finite_S: "finite S" by blast
-  from Suc(2) card_S_is_k have "card S < card A" by linarith
-  from card_psubset[OF assms S_subset_A this] obtain x where x_is_new: "x \<in> A - S" by blast
-  let ?S' = "S \<union> {x}"
-  from S_subset_A x_is_new have "?S' \<subseteq> A" by blast
-  moreover
-  from x_is_new card_S_is_k finite_S have "card ?S' = Suc k" by auto
-  ultimately show ?case using rev_finite_subset[OF assms] by blast
-qed
-
-lemma difference_element_exists:
+lemma obtain_difference_element:
   fixes F :: "'a set set"
   assumes "2 \<le> card F"
-  shows "\<exists>x\<in> \<Union>F. x \<notin> \<Inter>F"
+  obtains "x" where "x\<in> \<Union>F" "x \<notin> \<Inter>F"
 proof -
   from assms card_le_Suc_iff[of 1 F] obtain A F' where 0: "F = insert A F'" and 1: "A \<notin> F'" and 2: "1 \<le> card F'" by auto
   from 2 card_le_Suc_iff[of 0 F'] obtain B F'' where 3: "F' = insert B F''" by auto
   from 1 3 have A_noteq_B: "A \<noteq> B" by blast
   from 0 3 have A_in_F: "A \<in> F" and B_in_F: "B \<in> F" by blast+
   from A_noteq_B have "(A - B) \<union> (B - A) \<noteq> {}" by simp
-  with A_in_F B_in_F show ?thesis by blast
+  with A_in_F B_in_F that show thesis by blast
 qed
 
 end

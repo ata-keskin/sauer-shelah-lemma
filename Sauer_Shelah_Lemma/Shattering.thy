@@ -2,15 +2,15 @@
     Author:     Ata Keskin, TU München
 *)
 
+section \<open>Definitions and lemmas on shattering\<close>
+
 theory Shattering
   imports Main
 begin
 
-section \<open>Definitions and lemmas on shattering\<close>
-
 subsection \<open>Intersection of a family of sets with a set\<close>
 
-abbreviation interF :: "'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set set" (infixl "\<inter>*" 70)
+abbreviation IntF :: "'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set set" (infixl "\<inter>*" 60)
   where "F \<inter>* S \<equiv> ((\<inter>) S) ` F"
 
 lemma idem_IntF:
@@ -24,7 +24,7 @@ qed
 lemma subset_IntF: 
   assumes "A \<subseteq> B"
   shows "A \<inter>* X \<subseteq> B \<inter>* X"
-using assms by (rule image_mono)
+  using assms by (rule image_mono)
 
 lemma Int_IntF: "(A \<inter>* Y) \<inter>* X = A \<inter>* (Y \<inter> X)"
 proof
@@ -48,6 +48,7 @@ next
   qed
 qed
 
+\<comment> \<open>insert distributes over \<inter>*\<close>
 lemma insert_IntF: 
   shows "insert x ` (H \<inter>* S) = (insert x ` H) \<inter>* (insert x S)"
 proof
