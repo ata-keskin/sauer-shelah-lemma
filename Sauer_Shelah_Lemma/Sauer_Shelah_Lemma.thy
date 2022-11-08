@@ -21,31 +21,31 @@ proof (induction F rule: measure_induct_rule[of "card"])
     case True
     from obtain_difference_element[OF True] obtain x :: 'a where x_in_Union_F: "x \<in> \<Union>F" and x_not_in_Int_F: "x \<notin> \<Inter>F" by blast
 
-    \<comment> \<open>Define F0 as the subfamily of F containing those sets that don't contain x\<close>
+    text \<open>Define F0 as the subfamily of F containing those sets that don't contain x\<close>
     let ?F0 = "{S \<in> F. x \<notin> S}"
     from x_in_Union_F have F0_psubset_F: "?F0 \<subset> F" by blast
     from F0_psubset_F have F0_in_F: "?F0 \<subseteq> F" by blast
     from subset_shattered_by[OF F0_in_F] have shF0_subset_shF: "shattered_by ?F0 \<subseteq> shattered_by F" .
     from F0_in_F have Un_F0_in_Un_F:"\<Union> ?F0 \<subseteq> \<Union> F" by blast
 
-    \<comment> \<open>F0 shatters at least as many sets as |F0| by the induction hypothesis\<close>
+    text \<open>F0 shatters at least as many sets as |F0| by the induction hypothesis\<close>
     note IH_F0 = less(1)[OF psubset_card_mono[OF finite_F F0_psubset_F] rev_finite_subset[OF less(2) Un_F0_in_Un_F]]
 
-    \<comment> \<open>Define F1 as the subfamily of F containing those sets that contain x\<close>
+    text \<open>Define F1 as the subfamily of F containing those sets that contain x\<close>
     let ?F1 = "{S \<in> F. x \<in> S}"
     from x_not_in_Int_F have F1_psubset_F: "?F1 \<subset> F" by blast
     from F1_psubset_F have F1_in_F: "?F1 \<subseteq> F" by blast
     from subset_shattered_by[OF F1_in_F] have shF1_subset_shF: "shattered_by ?F1 \<subseteq> shattered_by F" .
     from F1_in_F have Un_F1_in_Un_F:"\<Union> ?F1 \<subseteq> \<Union> F" by blast
 
-    \<comment> \<open>F1 shatters at least as many sets as |F1| by the induction hypothesis\<close>
+    text \<open>F1 shatters at least as many sets as |F1| by the induction hypothesis\<close>
     note IH_F1 = less(1)[OF psubset_card_mono[OF finite_F F1_psubset_F] rev_finite_subset[OF less(2) Un_F1_in_Un_F]]
 
     from shF0_subset_shF shF1_subset_shF have shattered_subset: "(shattered_by ?F0) \<union> (shattered_by ?F1) \<subseteq> shattered_by F" by simp
 
-    \<comment> \<open>There is a set with the same cardinality as the intersection of 
-        "shattered_by ?F0" and "shattered_by ?F1" which is disjoint from their union, 
-        which is also contained in "shattered_by F".\<close>
+    text \<open>There is a set with the same cardinality as the intersection of 
+        @{term "shattered_by ?F0"} and @{term "shattered_by ?F1"} which is disjoint from their union, 
+        which is also contained in @{term "shattered_by F"}.\<close>
     have f_copies_the_intersection:
       "\<exists>f. inj_on f (shattered_by ?F0 \<inter> shattered_by ?F1) \<and>
        (shattered_by ?F0 \<union> shattered_by ?F1) \<inter> (f ` (shattered_by ?F0 \<inter> shattered_by ?F1)) = {} \<and>
@@ -53,7 +53,7 @@ proof (induction F rule: measure_induct_rule[of "card"])
     proof
       have x_not_in_shattered: "\<forall>S\<in>(shattered_by ?F0) \<union> (shattered_by ?F1). x \<notin> S" unfolding shattered_by_def by blast
      
-      \<comment> \<open>This set is precisely the image of the intersection under "insert x".\<close>
+      text \<open>This set is precisely the image of the intersection under @{term "insert x"}.\<close>
       let ?f = "insert x"
       have 0: "inj_on ?f (shattered_by ?F0 \<inter> shattered_by ?F1)"
       proof
@@ -66,7 +66,7 @@ proof (induction F rule: measure_induct_rule[of "card"])
         finally show "X = Y" .
       qed
 
-      \<comment> \<open>The set is disjoint from the union.\<close>
+      text \<open>The set is disjoint from the union.\<close>
       have 1: "(shattered_by ?F0 \<union> shattered_by ?F1) \<inter> ?f ` (shattered_by ?F0 \<inter> shattered_by ?F1) = {}"
       proof (rule ccontr)
         assume "(shattered_by ?F0 \<union> shattered_by ?F1) \<inter> ?f ` (shattered_by ?F0 \<inter> shattered_by ?F1) \<noteq> {}"
@@ -75,7 +75,7 @@ proof (induction F rule: measure_induct_rule[of "card"])
         with 11 show "False" by blast
       qed
 
-      \<comment> \<open>This set is also in "shattered_by F".\<close>
+      text \<open>This set is also in @{term "shattered_by F"}.\<close>
       have 2: "?f ` (shattered_by ?F0 \<inter> shattered_by ?F1) \<subseteq> shattered_by F"
       proof 
         fix S_x
@@ -103,7 +103,7 @@ proof (induction F rule: measure_induct_rule[of "card"])
     from finite_F have finite_F0: "finite ?F0" and finite_F1: "finite ?F1" by fastforce+
     have disjoint_F0_F1: "?F0 \<inter> ?F1 = {}" by fastforce
 
-    \<comment> \<open>Thus we have the following lower bound on the cardinality of "shattered_by F"\<close>
+    text \<open>Thus we have the following lower bound on the cardinality of @{term "shattered_by F"}\<close>
     from F0_union_F1_is_F card_Un_disjoint[OF finite_F0 finite_F1 disjoint_F0_F1] 
     have "card F = card ?F0 + card ?F1" by argo
     also from IH_F0
@@ -114,7 +114,7 @@ proof (induction F rule: measure_induct_rule[of "card"])
     have "... \<le> card (shattered_by F)" by argo
     finally show ?thesis .
   next
-    \<comment> \<open>If F contains less than 2 sets, the statement follows trivially\<close>
+    text \<open>If F contains less than 2 sets, the statement follows trivially\<close>
     case False
     hence "card F = 0 \<or> card F = 1" by force
     thus ?thesis

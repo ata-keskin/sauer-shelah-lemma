@@ -2,7 +2,7 @@
     Author:     Ata Keskin, TU München
 *)
 
-section \<open>Definitions and lemmas on shattering\<close>
+section \<open>Definitions and lemmas about shattering\<close>
 
 theory Shattering
   imports Main
@@ -48,7 +48,7 @@ next
   qed
 qed
 
-\<comment> \<open>insert distributes over \<inter>*\<close>
+text \<open>insert distributes over IntF\<close>
 lemma insert_IntF: 
   shows "insert x ` (H \<inter>* S) = (insert x ` H) \<inter>* (insert x S)"
 proof
