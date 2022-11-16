@@ -5,8 +5,8 @@ begin
 lemma lemma_6_3:
   assumes "0 \<le> p" and p_less_1: "p < 1" and "finite V" and "U \<subseteq> V" and "U' \<subseteq> V" and 
           card_U: "card U = d" and card_U': "card U' = d" and card_U_Int_U': "card (U \<inter> U') = r" and 
-          fin_x: "finite (dom x)" and vect_x: "vector x" and ran_x: "ran x \<subseteq> {0, 1}" and len_x: "len x = n"
-  shows "measure_pmf.prob (pmf_vector (random_subset V p) n) {T. ran T \<subseteq> power_set V \<and> map_vector ((\<lambda>_ S. card {u\<in>U. S u})) T = x \<and> map_vector ((\<lambda>_ S. card {u\<in>U'. S u})) T = x} = ((1 - p) ^ ((2 * d - r) * n)) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(count x 1)"
+          fin_vect_x[unfolded n_vectors_def]: "x \<in> \<llangle>{0, 1}\<rrangle>^n"
+  shows "measure_pmf.prob (pmf_vector (random_subset V p) n) {T \<in> \<llangle>power_set V\<rrangle>^n. map_vector ((\<lambda>_ S. card {u\<in>U. S u})) T = x \<and> map_vector ((\<lambda>_ S. card {u\<in>U'. S u})) T = x} = ((1 - p) ^ ((2 * d - r) * n)) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(count x 1)"
 proof -
   note finite_U = finite_subset[OF assms(4) assms(3)]
   note finite_U' = finite_subset[OF assms(5) assms(3)]
@@ -34,8 +34,8 @@ proof -
         = (1 - p) ^ (2 * d - r) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(the (x i))" for i
   proof (cases "x i")
     case None
-    assume "i < n" hence "i < len x" using len_x by blast
-    from fin_vect_Some_iff[OF vect_x fin_x, of i] this None show ?thesis by force
+    assume "i < n" hence "i < len x" using fin_vect_x by blast
+    with fin_vect_Some_iff[of _ i] None fin_vect_x show ?thesis by force
   next
     case (Some a)
     assume "i < n"
@@ -56,7 +56,7 @@ proof -
       finally show ?thesis by (simp add: 0 Some)
     next
       case (Suc nat) hence a_noteq_0: "a \<noteq> 0" by fast
-      with ran_def[of x] ran_x Some have a_is_1: "a = 1" by auto
+      with ran_def[of x] fin_vect_x Some have a_is_1: "a = 1" by auto
       show ?thesis
       proof (cases "2 > 2 * d - r")
         case _: True
@@ -350,9 +350,9 @@ proof -
     qed
   qed
 
-  have "measure_pmf.prob (pmf_vector (random_subset V p) n) {T. ran T \<subseteq> power_set V \<and> map_vector (\<lambda>_ S. card {u\<in>U. S u}) T = x \<and> map_vector (\<lambda>_ S. card {u\<in>U'. S u}) T = x} 
+  have "measure_pmf.prob (pmf_vector (random_subset V p) n) {T \<in> \<llangle>power_set V\<rrangle>^n. map_vector (\<lambda>_ S. card {u\<in>U. S u}) T = x \<and> map_vector (\<lambda>_ S. card {u\<in>U'. S u}) T = x} 
     = (\<Prod>i\<in>{i. i<n}. measure_pmf.prob (random_subset V p) {T_i \<in> power_set V. Some (card {u\<in>U. T_i u}) = x i \<and> Some (card {u\<in>U'. T_i u}) = x i})" 
-    using measure_Pi_pmf_vector[OF vect_x fin_x, of "{(\<lambda>_ S. card {u \<in> U. S u}), (\<lambda>_ S. card {u \<in> U'. S u})}" "random_subset V p" "power_set V"] len_x by force
+    using measure_Pi_pmf_vector[of _ _ "{(\<lambda>_ S. card {u \<in> U. S u}), (\<lambda>_ S. card {u \<in> U'. S u})}" n "random_subset V p" "power_set V"] fin_vect_x by force
   also have "... = (\<Prod>i\<in>{i. i<n}. (1 - p) ^ (2 * d - r) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(the (x i)))" using inner by fastforce
   also have "... = (\<Prod>i\<in>{i. i<n}. (1 - p) ^ (2 * d - r)) * ((\<Prod>i\<in>{i. i<n}. ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(the (x i))))" by (simp only: prod.distrib)
   also have "... = ((1 - p) ^ (2 * d - r))^n * ((\<Prod>i\<in>{i. i<n}. ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(the (x i))))" by (simp only: prod_constant card_Collect_less_nat)
@@ -360,9 +360,6 @@ proof -
   also have "... = ((1 - p) ^ ((2 * d - r) * n)) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(count x 1)" by (simp only: semiring_normalization_rules) 
   finally show ?thesis .
 qed
-
-
-
 
 
 end
