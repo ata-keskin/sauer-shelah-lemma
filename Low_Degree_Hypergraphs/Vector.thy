@@ -13,28 +13,22 @@ definition vector :: "(nat \<rightharpoonup> 'a) \<Rightarrow> bool" where
 definition len :: "'a vector \<Rightarrow> nat" where
   "len v = card (dom v)"
 
+abbreviation nth :: "'a vector \<Rightarrow> nat \<Rightarrow> 'a" (infixl "!." 100) where
+  "v !. n \<equiv> the (v n)"
+
 definition cut :: "'a vector \<Rightarrow> nat \<Rightarrow> 'a vector" where
   "cut v n = (\<lambda>i::nat. if i \<ge> n then None else v i)"
 
 definition map_vector :: "(nat \<Rightarrow> 'a \<Rightarrow> 'b) \<Rightarrow> 'a vector \<Rightarrow> 'b vector" where
   "map_vector f v = (\<lambda>i::nat. map_option (f i) (v i))"
 
-definition vector_of :: "(nat \<Rightarrow> 'a) \<Rightarrow> 'a vector" ("/\<langle>_/\<rangle>" [999] 100) where
-  "\<langle>f\<rangle> = (\<lambda>i::nat. Some (f i))"
-
-abbreviation enum :: "nat \<Rightarrow> 'a vector \<Rightarrow> 'a" where
-  "enum n v \<equiv> the (v n)"
-
 definition n_vectors :: "'a set \<Rightarrow> nat \<Rightarrow> 'a vector set" ("/\<llangle>_/\<rrangle>^_" [0,999] 100) where
   "\<llangle>V\<rrangle>^n = {v::'a vector. vector v \<and> finite (dom v) \<and> len v = n \<and> ran v \<subseteq> V}"
 
-definition set :: "'a vector \<Rightarrow> 'a set" where
- "set v = the ` v ` dom v"
-
-definition prefix :: "'a vector \<Rightarrow> 'a vector \<Rightarrow> bool" (infixl "prefix" 60) where
+definition prefix :: "'a vector \<Rightarrow> 'a vector \<Rightarrow> bool" (infixl "prefix" 100) where
   "u prefix v \<longleftrightarrow> (\<forall>i\<in>dom u. u i = v i)"
 
-definition suffix :: "'a vector \<Rightarrow> 'a vector \<Rightarrow> bool" (infixl "suffix" 60) where
+definition suffix :: "'a vector \<Rightarrow> 'a vector \<Rightarrow> bool" (infixl "suffix" 100) where
   "u suffix v \<longleftrightarrow> (\<exists>n. \<forall>i\<ge>n. u i = v (n + i))"
 
 subsection "Basic Properties"
@@ -177,6 +171,19 @@ lemma n_vectors_finite:
   shows "finite (\<llangle>V\<rrangle>^n)"
   using n_vectors_alt_def2[of V n] finite_set_of_finite_maps[OF finite_Collect_less_nat[of n] assms] by argo
 
+lemma ran_alt_def:
+  shows "ran v = the ` v ` dom v" unfolding ran_def dom_def by force
+
+lemma nth_ranI:
+  assumes "n \<in> dom v"
+  shows "v !. n \<in> ran v"
+  using assms unfolding dom_def ran_def by force
+
+lemma nth_iff_Some:
+  assumes "n \<in> dom v"
+  shows "v !. n = x \<longleftrightarrow> v n = Some x"
+  using assms unfolding dom_def by force
+
 lemma prefix_alt_def:
   shows "u prefix v \<longleftrightarrow> v |` (dom u) = u"
 proof
@@ -247,7 +254,7 @@ lemma count_alt_def: "count v x = card {i\<in>dom v. v i = Some x}"
 
 lemma fin_vect_count:
   assumes "v\<in>\<llangle>V\<rrangle>^n"
-  shows "count v x = count (cut v k) x + card {i \<in> dom v. i \<ge> k \<and> v i = Some x}"
+  shows "count v x = count (cut v k) x + card {i. k \<le> i \<and> i < n \<and> v i = Some x}"
 proof -
   have h0: "finite {i. i < n \<and> i < k \<and> v i = Some x}" by fast
   have h1: "finite {i. i < n \<and> i \<ge> k \<and> v i = Some x}" by fast
@@ -260,26 +267,38 @@ proof -
   also have "... = card {i. i < n \<and> i < k \<and> v i = Some x} + card {i. i < n \<and> i \<ge> k \<and> v i = Some x}" using card_Un_disjoint[OF h0 h1 h2] h3 by argo
   also have "... = card {i. i < n \<and> i < k \<and> (cut v k) i = Some x} + card {i. i < n \<and> i \<ge> k \<and> v i = Some x}" by (metis h4)
   also have "... = card {i \<in> dom (cut v k). (cut v k) i = Some x} + card {i \<in> dom v. i \<ge> k \<and> v i = Some x}" by (simp add: fin_vect_domI[OF assms] cut_domI)
-  finally show ?thesis by (simp add: count_alt_def)
+  finally show ?thesis by (simp add: count_alt_def fin_vect_domI[OF assms], meson) 
 qed
 
 subsection "Map Vector Lemmas"
 
 lemma map_vector_vector:
-  shows "vector v \<longleftrightarrow> vector (map_vector f v)"
+  shows "vector (map_vector f v) = vector v"
   unfolding map_vector_def vector_def by simp
 
 lemma map_vector_fin:
-  shows "finite (dom v) \<longleftrightarrow> finite (dom (map_vector f v))"
+  shows "finite (dom (map_vector f v)) = finite (dom v)"
   unfolding map_vector_def by (simp add: fin_iff)
 
 lemma map_vector_dom:
-  shows "dom v = dom (map_vector f v)"
+  shows "dom (map_vector f v) = dom v"
   unfolding map_vector_def dom_def by force
 
 lemma map_vector_len:
-  shows "len v = len (map_vector f v)"
+  shows "len (map_vector f v) = len v"
   unfolding len_def map_vector_def dom_def by force
+
+lemma map_vector_ran:
+  shows "ran (map_vector f v) \<subseteq> (\<Union>i\<in>dom v. image (f i) (ran v))"
+proof
+  fix x assume "x \<in> ran (map_vector f v)"
+  then obtain i where m: "map_vector f v i = Some x" unfolding ran_def by blast
+  with map_vector_dom[of f v] Map.domI have d: "i \<in> dom v" by blast
+  then obtain z where "v i = Some z" and r: "z \<in> ran v" unfolding ran_def by blast+
+  with m have "f i z = x" unfolding map_vector_def by simp
+  with r have "x \<in> image (f i) (ran v)" by blast
+  with d show "x \<in> (\<Union>i\<in>dom v. image (f i) (ran v))" by force
+qed
 
 lemma map_vector_iff:
   assumes "x \<in> \<llangle>V\<rrangle>^n"
@@ -304,25 +323,37 @@ next
 next
   fix i
   assume asm1: "x = map_vector f v" and asm2: "n \<le> i"
-  with fin_vect_domI[OF assms] map_vector_dom[of v f] show "v i = None" by (metis CollectD domIff leD)
+  with fin_vect_domI[OF assms] map_vector_dom[of f v] show "v i = None" by (metis CollectD domIff leD)
 qed
 
-lemma map_vector_btw:
-  assumes "x \<in> \<llangle>U::'a set\<rrangle>^n"
-  shows "map_vector f x \<in> \<llangle>\<Union>f_i \<in> (image f \<nat>). image f_i (ran x)\<rrangle>^n"
-  using assms sorry
+lemma fin_vect_map_vector:
+  assumes "v \<in> \<llangle>U::'a set\<rrangle>^n"
+  shows "map_vector f v \<in> \<llangle>\<Union>i \<in> {i. i < n}. image (f i) U\<rrangle>^n"
+  using n_vectors_alt_def2[of "\<Union>i \<in> {i. i < n}. image (f i) U" n] 
+        map_vector_ran[of f v] 
+        map_vector_dom[of f v]
+        fin_vect_ranI[OF assms]
+        fin_vect_domI[OF assms]
+  by force
 
 subsection "Miscellaneous Lemmas"
 
-lemma fin_vect_induct[case_names Empty Cut FinVect]: 
-  assumes "P Map.empty 0" and "(\<And>v n. v \<in> \<llangle>UNIV\<rrangle>^(Suc n) \<Longrightarrow> \<forall>k < Suc n. P (cut v k) k \<Longrightarrow> P v (Suc n))" and "v \<in> \<llangle>UNIV\<rrangle>^n"
+lemma fin_vect_UNIV:
+  assumes "x \<in> \<llangle>V\<rrangle>^n"
+  shows "x \<in> \<llangle>UNIV\<rrangle>^n"
+  using assms n_vectors_subset[of V UNIV n] by blast 
+
+lemma fin_vect_induct[consumes 1, case_names Empty Cut FinVect]: 
+  assumes "v \<in> \<llangle>V\<rrangle>^n"
+  and "P Map.empty 0"
+  and "(\<And>v n::nat. v \<in> \<llangle>V\<rrangle>^(Suc n) \<Longrightarrow> \<forall>k < Suc n. P (cut v k) k \<Longrightarrow> P v (Suc n))"
   shows "P v n"
 using assms proof (induction n arbitrary: v rule: less_induct)
   case (less x)
   show ?case
   proof (cases x)
     case 0
-    with less(2,4) n_vectors_zero show ?thesis by force
+    with less(2,3) n_vectors_zero show ?thesis by force
   next
     case (Suc nat)
     with less show ?thesis by (metis fin_vect_cut min.absorb4)
@@ -330,7 +361,7 @@ using assms proof (induction n arbitrary: v rule: less_induct)
 qed
 
 lemma vector_equ: 
-  assumes "v \<in> \<llangle>UNIV\<rrangle>^n" and "w \<in> \<llangle>UNIV\<rrangle>^n" and "\<forall>i<n. v i = w i"
+  assumes "v \<in> \<llangle>\<Omega>\<rrangle>^n" and "w \<in> \<llangle>\<Omega>\<rrangle>^n" and "\<forall>i<n. v i = w i"
   shows "v = w"
 proof
   fix i
@@ -348,23 +379,35 @@ qed
 
 lemma zero_one_vector_sum:
   assumes "x\<in>\<llangle>{0,1}\<rrangle>^n"
-  shows "(\<Sum>i\<in>{i. i < n}. N * (the (x i))) = N * (count x 1)"
-proof (induction x n rule: fin_vect_induct)
+  shows "(\<Sum>i::nat | i < n. N * x !. i) = N * (count x 1)"
+using assms proof (induction x n rule: fin_vect_induct)
   case Empty
   then show ?case unfolding count_def by simp
 next
   case (Cut v n)
-  have "(\<Sum>i | i < Suc n. N * enum i v) = (\<Sum>i | i \<le> n. N * enum i v)" using less_Suc_eq_le by presburger
-  also have "... = (\<Sum>i | i < n. N * enum i v) + N * enum n v" sorry  
-  then show ?case sorry
-next
-  case FinVect
-  from assms n_vectors_subset[of "{0,1}" UNIV n] show ?case by blast
+  have nat_set: "{i. i \<le> n} - {n} = {i. i < n}" by force 
+  have zero_one_vector_property: "card {i. n \<le> i \<and> i < Suc n \<and> v i = Some 1} = v !. n"
+  proof (cases "v !. n")
+    case 0
+    then show ?thesis using less_Suc_eq_le by fastforce
+  next
+    case (Suc _) with fin_vect_domI[OF Cut(1)] fin_vect_ranI[OF Cut(1)] nth_ranI[of n v]
+    have 1: "v !. n = 1" by auto
+    with fin_vect_domI[OF Cut(1)] nth_iff_Some[of n v 1] 
+    have "{i. n \<le> i \<and> i < Suc n \<and> v i = Some 1} = {n}" by force
+    with 1 show ?thesis by force
+  qed
+  have "(\<Sum>i::nat | i < Suc n. N * v !. i) = (\<Sum>i | i \<le> n. N * v !. i)" using less_Suc_eq_le by presburger
+  also from sum.subset_diff[OF _ finite_Collect_le_nat[of n], of "{n}" "\<lambda>i. N * v !. i"] nat_set 
+  have "... = (\<Sum>i | i < n. N * v !. i) + N * v !. n" by fastforce
+  also have "... = (\<Sum>i | i < n. N * (cut v n) !. i) + N * v !. n" unfolding cut_def by force
+  also from Cut(2) have "... = N * (count (cut v n) 1 + v !. n)" by (simp add: distrib_left)
+  finally show ?case using fin_vect_count[OF Cut(1), of 1 n] zero_one_vector_property by argo
 qed
 
 lemma zero_one_vector_prod:
   assumes "x\<in>\<llangle>{0,1}\<rrangle>^n"
-  shows "(\<Prod>i\<in>{i. i < len x}. (N::'a::comm_semiring_1)^(the (x i))) = N^(count x 1)"
-  using zero_one_vector_sum[OF assms, of 1] apply (simp add: power_sum[symmetric]) sorry
+  shows "(\<Prod>i | i < n. (N::'a::comm_semiring_1)^(x !. i)) = N^(count x 1)"
+  using zero_one_vector_sum[OF assms, of 1] by (simp add: power_sum[symmetric])
 
 end

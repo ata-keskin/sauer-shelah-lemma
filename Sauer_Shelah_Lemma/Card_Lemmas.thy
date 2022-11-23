@@ -4,18 +4,11 @@
 
 section "Lemmas involving the cardinality of sets"
 
+text \<open>In this section, we prove some lemmas that make use of the term @{term card} or provide bounds for it.\<close>
+
 theory Card_Lemmas
   imports Main
 begin
-
-lemma card_diff: 
-  assumes "finite A"
-  shows "card A = card (A - B) + card (A \<inter> B)"
-proof -
-  from assms have fin0: "finite (A - B)" and fin1: "finite (A \<inter> B)" by blast+
-  have A_equ: "A = (A - B) \<union> (A \<inter> B)" and disjoint: "(A - B) \<inter> (A \<inter> B) = {}" by blast+
-  from card_Un_disjoint[OF fin0 fin1 disjoint] A_equ show ?thesis by argo
-qed
 
 lemma card_Int_copy:
   assumes "finite X" and "A \<union> B \<subseteq> X" and "\<exists>f. inj_on f (A \<inter> B) \<and> (A \<union> B) \<inter> (f ` (A \<inter> B)) = {} \<and> f ` (A \<inter> B) \<subseteq> X"
@@ -24,7 +17,9 @@ proof -
   from rev_finite_subset[OF assms(1), of A] rev_finite_subset[OF assms(1), of B] assms(2) 
   have finite_A: "finite A" and finite_B: "finite B" by blast+
   then have finite_A_Un_B: "finite (A \<union> B)" and finite_A_Int_B: "finite (A \<inter> B)" by blast+
-  from assms(3) obtain f where f_inj_on: "inj_on f (A \<inter> B)" and f_disjnt: "(A \<union> B) \<inter> (f ` (A \<inter> B)) = {}" and f_imj_in: "f ` (A \<inter> B) \<subseteq> X" by blast
+  from assms(3) obtain f where f_inj_on: "inj_on f (A \<inter> B)" 
+                           and f_disjnt: "(A \<union> B) \<inter> (f ` (A \<inter> B)) = {}" 
+                           and f_imj_in: "f ` (A \<inter> B) \<subseteq> X" by blast
   from finite_A_Int_B have finite_f_img: "finite (f ` (A \<inter> B))" by blast
   from assms(2) f_imj_in have union_in: "(A \<union> B) \<union> f ` (A \<inter> B) \<subseteq> X" by blast
   

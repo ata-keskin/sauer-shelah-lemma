@@ -9,6 +9,20 @@ theory Sauer_Shelah_Lemma
 begin
 
 subsection \<open>Generalized Sauer-Shelah Lemma\<close>
+
+text \<open>To prove the Sauer-Shelah Lemma, we will first prove a slightly stronger fact that every family
+      @{term "F"} shatters at least as many sets as @{term "card F"}. We first fix an element @{term "x \<in> (\<Union> F)"}
+      and consider the subfamily @{term F0} of sets in the family not containing it. By induction @{term F0} 
+      shatters at least as many elements of @{term F} as @{term "card F0"}. 
+      Next we consider the subfamily @{term F1} of sets in the family that contain @{term x}.
+      Again, by induction @{term F1} shatters as many elements of @{term F} as its cardinality. 
+      The number of elements of @{term F} shattered by @{term F0} and @{term F1} sum up to at least 
+      @{term "card F0 + card F1 = card F"}. When a set @{term "S \<in> F"} is shattered by only one of the two subfamilies, say @{term F0}, 
+      it contributes one unit to the set @{term "shattered_by F0"} and to @{term "shattered_by F"}. However when the set is shattered by 
+      both subfamilies, both @{term S} and @{term "S \<union> {x}"} are in @{term "shattered_by F"}, so @{term S} contributes two units
+      to @{term "shattered_by F0 \<union> shattered_by F1"}. Therefore, the cardinality of @{term "shattered_by F"} 
+      is at least equal to the cardinality of @{term "shattered_by F0 \<union> shattered_by F1"}, which is at least @{term "card F"}.\<close>
+
 lemma sauer_shelah_0:
   fixes F :: "'a set set"
   shows "finite (\<Union> F) \<Longrightarrow> card F \<le> card (shattered_by F)"
@@ -19,32 +33,35 @@ proof (induction F rule: measure_induct_rule[of "card"])
   show ?case
   proof (cases "2 \<le> card F")
     case True
-    from obtain_difference_element[OF True] obtain x :: 'a where x_in_Union_F: "x \<in> \<Union>F" and x_not_in_Int_F: "x \<notin> \<Inter>F" by blast
+    from obtain_difference_element[OF True] 
+    obtain x :: 'a where x_in_Union_F: "x \<in> \<Union>F" 
+                     and x_not_in_Int_F: "x \<notin> \<Inter>F" by blast
 
-    text \<open>Define F0 as the subfamily of F containing those sets that don't contain x\<close>
+    text \<open>Define F0 as the subfamily of F containing sets that don't contain @{term x}.\<close>
     let ?F0 = "{S \<in> F. x \<notin> S}"
     from x_in_Union_F have F0_psubset_F: "?F0 \<subset> F" by blast
     from F0_psubset_F have F0_in_F: "?F0 \<subseteq> F" by blast
     from subset_shattered_by[OF F0_in_F] have shF0_subset_shF: "shattered_by ?F0 \<subseteq> shattered_by F" .
     from F0_in_F have Un_F0_in_Un_F:"\<Union> ?F0 \<subseteq> \<Union> F" by blast
 
-    text \<open>F0 shatters at least as many sets as |F0| by the induction hypothesis\<close>
+    text \<open>F0 shatters at least as many sets as @{term "card F0"} by the induction hypothesis\<close>
     note IH_F0 = less(1)[OF psubset_card_mono[OF finite_F F0_psubset_F] rev_finite_subset[OF less(2) Un_F0_in_Un_F]]
 
-    text \<open>Define F1 as the subfamily of F containing those sets that contain x\<close>
+    text \<open>Define F1 as the subfamily of F containing sets that contain @{term x}\<close>
     let ?F1 = "{S \<in> F. x \<in> S}"
     from x_not_in_Int_F have F1_psubset_F: "?F1 \<subset> F" by blast
     from F1_psubset_F have F1_in_F: "?F1 \<subseteq> F" by blast
     from subset_shattered_by[OF F1_in_F] have shF1_subset_shF: "shattered_by ?F1 \<subseteq> shattered_by F" .
     from F1_in_F have Un_F1_in_Un_F:"\<Union> ?F1 \<subseteq> \<Union> F" by blast
 
-    text \<open>F1 shatters at least as many sets as |F1| by the induction hypothesis\<close>
+    text \<open>F1 shatters at least as many sets as @{term "card F1"} by the induction hypothesis\<close>
     note IH_F1 = less(1)[OF psubset_card_mono[OF finite_F F1_psubset_F] rev_finite_subset[OF less(2) Un_F1_in_Un_F]]
 
-    from shF0_subset_shF shF1_subset_shF have shattered_subset: "(shattered_by ?F0) \<union> (shattered_by ?F1) \<subseteq> shattered_by F" by simp
+    from shF0_subset_shF shF1_subset_shF 
+    have shattered_subset: "(shattered_by ?F0) \<union> (shattered_by ?F1) \<subseteq> shattered_by F" by simp
 
     text \<open>There is a set with the same cardinality as the intersection of 
-        @{term "shattered_by ?F0"} and @{term "shattered_by ?F1"} which is disjoint from their union, 
+        @{term "shattered_by F0"} and @{term "shattered_by F1"} which is disjoint from their union, 
         which is also contained in @{term "shattered_by F"}.\<close>
     have f_copies_the_intersection:
       "\<exists>f. inj_on f (shattered_by ?F0 \<inter> shattered_by ?F1) \<and>
@@ -70,7 +87,8 @@ proof (induction F rule: measure_induct_rule[of "card"])
       have 1: "(shattered_by ?F0 \<union> shattered_by ?F1) \<inter> ?f ` (shattered_by ?F0 \<inter> shattered_by ?F1) = {}"
       proof (rule ccontr)
         assume "(shattered_by ?F0 \<union> shattered_by ?F1) \<inter> ?f ` (shattered_by ?F0 \<inter> shattered_by ?F1) \<noteq> {}"
-        then obtain S where 10: "S \<in> (shattered_by ?F0 \<union> shattered_by ?F1)" and 11: "S \<in> ?f ` (shattered_by ?F0 \<inter> shattered_by ?F1)" by auto
+        then obtain S where 10: "S \<in> (shattered_by ?F0 \<union> shattered_by ?F1)" 
+                        and 11: "S \<in> ?f ` (shattered_by ?F0 \<inter> shattered_by ?F1)" by auto
         from 10 x_not_in_shattered have "x \<notin> S" by blast
         with 11 show "False" by blast
       qed
@@ -80,7 +98,9 @@ proof (induction F rule: measure_induct_rule[of "card"])
       proof 
         fix S_x
         assume "S_x \<in> ?f ` (shattered_by ?F0 \<inter> shattered_by ?F1)"
-        then obtain S where 20: "S \<in> shattered_by ?F0" and 21: "S \<in> shattered_by ?F1" and 22: "S_x = ?f S" by blast
+        then obtain S where 20: "S \<in> shattered_by ?F0" 
+                        and 21: "S \<in> shattered_by ?F1" 
+                        and 22: "S_x = ?f S" by blast
         from x_not_in_shattered 20 have x_not_in_S: "x \<notin> S" by blast
 
         from 22 Pow_insert[of x S] have "Pow S_x = Pow S \<union> ?f ` Pow S" by fast
@@ -114,7 +134,7 @@ proof (induction F rule: measure_induct_rule[of "card"])
     have "... \<le> card (shattered_by F)" by argo
     finally show ?thesis .
   next
-    text \<open>If F contains less than 2 sets, the statement follows trivially\<close>
+    text \<open>If @{term F} contains less than 2 sets, the statement follows trivially\<close>
     case False
     hence "card F = 0 \<or> card F = 1" by force
     thus ?thesis
@@ -131,6 +151,12 @@ proof (induction F rule: measure_induct_rule[of "card"])
 qed
 
 subsection \<open>Sauer-Shelah Lemma\<close>
+
+text \<open>The generalized version immediately implies the Sauer–Shelah Lemma,
+      because only @{text "(\<Sum>i\<le>k. n choose i)"} of the subsets of an @{term n}-item universe have cardinality less than @{term "k + (1::nat)"}.
+      Thus, when @{text "(\<Sum>i\<le>k. n choose i) < card F"}, there are not enough sets to be shattered, 
+      so one of the shattered sets must have cardinality at least @{term "k + (1::nat)"}\<close>
+
 corollary sauer_shelah:
   fixes F :: "'a set set"
   assumes "finite (\<Union>F)" and "(\<Sum>i\<le>k. card (\<Union>F) choose i) < card F"
@@ -162,6 +188,10 @@ proof -
 qed
 
 subsection \<open>Alternative statement of the Sauer-Shelah Lemma\<close>
+
+text \<open>We can also state the Sauer–Shelah Lemma in terms of the @{term VC_dim}. If the VC dimension of @{term F} is @{term k}, then @{term F}
+      can consist at most of @{text "(\<Sum>i\<le>k. card (\<Union>F) choose i)"} sets, which is in @{text "\<O>(card (\<Union>F)^k)"}\<close>
+
 corollary sauer_shelah_alt:
   assumes "finite (\<Union>F)" and "VC_dim F = k"
   shows "card F \<le> (\<Sum>i\<le>k. card (\<Union>F) choose i)"

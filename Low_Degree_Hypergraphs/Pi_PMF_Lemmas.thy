@@ -49,7 +49,7 @@ lemma measure_Pi_pmf_PiE_dflt_subset:
   by (simp add: measure_Pi_pmf_PiE_dflt[OF assms(2)] prod.subset_diff[OF assms])
 
 lemma measure_Pi_pmf_vector:
-  assumes "F \<noteq> {}" and "x \<in> \<llangle>UNIV\<rrangle>^n"
+  assumes "x \<in> \<llangle>\<Omega>\<rrangle>^n"
   shows "measure_pmf.prob (pmf_vector p n) {T \<in> \<llangle>V\<rrangle>^n. (\<forall>f\<in>F. map_vector f T = x)} 
       = (\<Prod>i\<in>{i. i<n}. measure_pmf.prob p {T_i \<in> V. \<forall>f\<in>F. Some (f i T_i) = x i})"
 proof -
@@ -58,28 +58,18 @@ proof -
     show "?lhs \<subseteq> ?rhs"
     proof 
       fix T assume asm: "T \<in> ?lhs" 
-      then have map_T: "\<forall>f\<in>F. map_vector f T = x" and ran_T: "ran T \<subseteq> V" unfolding n_vectors_def by blast+ 
-      from map_T have map_T_i: "\<forall>f\<in>F. \<forall>i<n. map_option (f i) (T i) = x i" unfolding map_vector_def by fastforce
-
-      from map_vector_vector assms(1) map_T have vect_T: "vector T" by fast
-      from map_vector_fin assms map_T have fin_T: "finite (dom T)" by fast
-      from map_vector_len map_T assms(3,4) have len_T: "len T = n" by fast
-      from fin_vect_None_iff[OF vect_T fin_T] len_T have T_i_None: "\<forall>i\<ge>n. T i = None" by simp
-      from fin_vect_ran_subset_iff[OF vect_T fin_T] len_T ran_T have T_i_Some: "\<forall>i<n. (T i) \<in> Some ` V" by presburger
-      from map_T_i T_i_None T_i_Some show "T \<in> ?rhs" unfolding PiE_dflt_def by force
+      then have map_T_i: "\<forall>f\<in>F. \<forall>i<n. map_option (f i) (T i) = x i" unfolding map_vector_def by fastforce
+      with n_vectors_alt_def[of V n] asm show "T \<in> ?rhs" unfolding PiE_dflt_def by simp
     qed
   next
     show "?rhs \<subseteq> ?lhs"
     proof
       fix T assume "T \<in> ?rhs" 
       then have map_T_i: "\<forall>f\<in>F. \<forall>i<n. map_option (f i) (T i) = x i" and T_i_None: "\<forall>i\<ge>n. T i = None" and T_i_Some: "\<forall>i<n. (T i) \<in> Some ` V" unfolding PiE_dflt_def by auto
-      from lenI T_i_None T_i_Some assms(4) have len_T: "len T = len x" by blast
-      from T_i_Some vectorI[OF T_i_None] None_notin_image_Some have vect_T: "vector T" by fast
-      from finite_dom_iff_fin_vect T_i_None have fin_T: "finite (dom T)" by blast
-      with map_vector_iff[OF assms(1,2)] map_T_i T_i_None T_i_Some fin_vects_alt_def[of V n] assms(4) show "T \<in> ?lhs" by auto
+      with map_vector_iff[OF assms, of _ T] n_vectors_alt_def[of V n] show "T \<in> ?lhs" by force
     qed
   qed
-  then have "measure_pmf.prob (pmf_vector p n) {T \<in> \<langle>V\<rangle>^n. (\<forall>f\<in>F. map_vector f T = x)} 
+  then have "measure_pmf.prob (pmf_vector p n) {T \<in> \<llangle>V\<rrangle>^n. (\<forall>f\<in>F. map_vector f T = x)} 
    = measure_pmf.prob (pmf_vector p n) (PiE_dflt {i. i<n} None (\<lambda>i. {T_i \<in> Some ` V. \<forall>f\<in>F. map_option (f i) T_i = x i}))" by presburger
   also have "...  = (\<Prod>i\<in>{i. i<n}. measure_pmf.prob p {T_i \<in> V. \<forall>f\<in>F. Some (f i T_i) = x i})" 
     unfolding pmf_vector_def using inj_image_mem_iff[OF injI, of "Some" _ V] by (simp add: measure_Pi_pmf_PiE_dflt[OF finite_Collect_less_nat, of n None])

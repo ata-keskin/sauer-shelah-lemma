@@ -4,6 +4,8 @@
 
 section \<open>Definitions and lemmas about shattering\<close>
 
+text \<open>In this section we introduce the predicate @{term "shatters"} and the term for the family of sets that a family shatters @{term "shattered_by"}.\<close>
+
 theory Shattering
   imports Main
 begin
@@ -48,7 +50,7 @@ next
   qed
 qed
 
-text \<open>insert distributes over IntF\<close>
+text \<open>@{term insert} distributes over @{term IntF}\<close>
 lemma insert_IntF: 
   shows "insert x ` (H \<inter>* S) = (insert x ` H) \<inter>* (insert x S)"
 proof
@@ -73,7 +75,7 @@ next
   qed
 qed
 
-subsection \<open>Definition of shattering\<close>
+subsection \<open>Definition of @{term shatters}, @{term VC_dim} and @{term shattered_by}\<close>
 
 abbreviation shatters :: "'a set set \<Rightarrow> 'a set \<Rightarrow> bool" (infixl "shatters" 70)
   where "H shatters A \<equiv> H \<inter>* A = Pow A"
@@ -123,7 +125,8 @@ lemma finite_shattered_by:
   shows "finite (shattered_by F)"
   using assms rev_finite_subset[OF _ shattered_by_in_Pow, of F] by fast
 
-text \<open>The following example shows that requiring finiteness of a family of sets is not enough\<close>
+text \<open>The following example shows that requiring finiteness of a family of sets is not enough, to ensure that @{term "shattered_by"} also stays finite.\<close>
+
 lemma "\<exists>F::nat set set. finite F \<and> infinite (shattered_by F)"
 proof -           
   let ?F = "{odd -` {True}, odd -` {False}}"
@@ -157,6 +160,5 @@ proof -
   then have "?N \<subseteq> shattered_by ?F" unfolding shattered_by_def by force
   from 0 infinite_super[OF this infinite_N] show ?thesis by blast
 qed
-
 
 end
