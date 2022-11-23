@@ -152,7 +152,7 @@ qed
 
 subsection \<open>Sauer-Shelah Lemma\<close>
 
-text \<open>The generalized version immediately implies the Sauer–Shelah Lemma,
+text \<open>The generalized version immediately implies the Sauer-Shelah Lemma,
       because only @{text "(\<Sum>i\<le>k. n choose i)"} of the subsets of an @{term n}-item universe have cardinality less than @{term "k + (1::nat)"}.
       Thus, when @{text "(\<Sum>i\<le>k. n choose i) < card F"}, there are not enough sets to be shattered, 
       so one of the shattered sets must have cardinality at least @{term "k + (1::nat)"}\<close>
@@ -177,6 +177,10 @@ proof -
 qed
 
 subsection \<open>Sauer-Shelah Lemma for hypergraphs\<close>
+
+text \<open>If we designate X to be the set of edges and S the set of vertices, we can also formulate the Sauer-Shelah Lemma in terms of hypergraphs. 
+      In this form the statement provides a sufficient condition for the existence of an hyperedge of a given cardinality, which is shattered by the set of edges.\<close>
+
 corollary sauer_shelah_2:
   fixes X :: "'a set set" and S :: "'a set"
   assumes "finite S" and "X \<subseteq> Pow S" and "(\<Sum>i\<le>k. card S choose i) < card X"
@@ -189,7 +193,7 @@ qed
 
 subsection \<open>Alternative statement of the Sauer-Shelah Lemma\<close>
 
-text \<open>We can also state the Sauer–Shelah Lemma in terms of the @{term VC_dim}. If the VC dimension of @{term F} is @{term k}, then @{term F}
+text \<open>We can also state the Sauer-Shelah Lemma in terms of the @{term VC_dim}. If the VC dimension of @{term F} is @{term k}, then @{term F}
       can consist at most of @{text "(\<Sum>i\<le>k. card (\<Union>F) choose i)"} sets, which is in @{text "\<O>(card (\<Union>F)^k)"}\<close>
 
 corollary sauer_shelah_alt:
