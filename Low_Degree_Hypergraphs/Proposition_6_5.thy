@@ -92,8 +92,7 @@ next
   have "... = (\<Sum>U\<in>Z. \<Sum>U'\<in>Z. measure_pmf.prob ?pmf_vect {T \<in> \<llangle>power_set V\<rrangle>^n. ?X_mult' U U' T})" by presburger
   also from lemma_6_3_for_U_in_Z
   have "... = (\<Sum>U\<in>Z. \<Sum>U'\<in>Z. \<Phi> p d x (card (U \<inter> U')))" by simp
-  also have "... = (\<Sum>(U, U')\<in>Z \<times> Z. \<Phi> p d x (card (U \<inter> U')))"
-    by (simp add: sum.cartesian_product)
+  also have "... = (\<Sum>(U, U')\<in>Z \<times> Z. \<Phi> p d x (card (U \<inter> U')))" by (simp add: sum.cartesian_product)
   also from integral_pmf_of_set[OF Z_times_Z_not_empty finite_cartesian_product[OF finite_edges finite_edges], of "(\<lambda>(U, U'). \<Phi> p d x (card (U \<inter> U')))"] pos_card_Z_times_Z
   have "... = card (Z \<times> Z) * measure_pmf.expectation (pmf_of_set (Z \<times> Z)) (\<lambda>(U, U'). \<Phi> p d x (card (U \<inter> U')))" by force
   finally have E_S_sq_val: "?E_S_sq = card Z ^ 2 * measure_pmf.expectation (pmf_of_set (Z \<times> Z)) (\<lambda>(U, U'). \<Phi> p d x (card (U \<inter> U')))"
@@ -101,7 +100,7 @@ next
 
   \<comment>\<open>We now show the statement using the Chebyshev Inequality\<close>
   from Z_not_empty finite_edges have card_Z_pos:"card Z > 0" by fastforce
-  with E_S_val assms(2) p_not_0 d_not_0 have E_S_positive: "0 < ?E_S" by fastforce
+  with E_S_val assms(2) p_not_0 d_not_0 have E_S_positive: "0 < ?E_S" unfolding \<Phi>_def by simp
 
   have "?S T = 0 \<Longrightarrow> ?E_S \<le> \<bar>?S T - ?E_S\<bar>" for T by linarith
   hence fmm_asm0: "{T \<in> \<llangle>power_set V\<rrangle>^n. ?S T = 0} \<subseteq> {T \<in> \<llangle>power_set V\<rrangle>^n. ?E_S \<le> \<bar>?S T - ?E_S\<bar>}" by fast

@@ -2,7 +2,7 @@ theory Lemma_6_3
   imports Main Vector Pi_PMF_Lemmas "HOL-Probability.Probability_Mass_Function" "HOL-Probability.Product_PMF"
 begin
 
-abbreviation \<Phi> :: "real \<Rightarrow> nat \<Rightarrow> nat vector \<Rightarrow> nat \<Rightarrow> real" where
+definition \<Phi> :: "real \<Rightarrow> nat \<Rightarrow> nat vector \<Rightarrow> nat \<Rightarrow> real" where
   "\<Phi> p d x r \<equiv> ((1 - p) ^ ((2 * d - r) * (len x))) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(count x 1)"
 
 lemma lemma_6_3:
@@ -361,7 +361,7 @@ proof -
   also have "... = ((1 - p) ^ (2 * d - r))^n * ((\<Prod>i | i < n. ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(x !. i)))" by (simp only: prod_constant card_Collect_less_nat)
   also have "... = ((1 - p) ^ (2 * d - r))^n * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(count x 1)" using zero_one_vector_prod[OF fin_vect_x] by auto
   also have "... = ((1 - p) ^ ((2 * d - r) * len x)) * ((p * r)/(1-p) + ((p * (d-r))/(1-p))^2)^(count x 1)" by (simp only: semiring_normalization_rules fin_vect_lenI[OF fin_vect_x]) 
-  finally show ?thesis .
+  finally show ?thesis unfolding \<Phi>_def .
 qed
 
 

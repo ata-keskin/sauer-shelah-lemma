@@ -25,7 +25,7 @@ proof (rule prob_space.indep_eventsI[OF measure_pmf.prob_space_axioms], simp)
       measure_pmf.prob (pmf_vector (random_subset V p) n) ({T \<in> \<llangle>power_set V\<rrangle>^n.  map_vector (\<lambda>_ S. card {u \<in> U. S u}) T = x \<and> map_vector (\<lambda>_ S. card {u \<in> U'. S u}) T = x})" by (simp only: intersection)
   also have "... = (measure_pmf.prob (pmf_vector (random_subset V p) n) {T \<in> \<llangle>power_set V\<rrangle>^n. map_vector (\<lambda>_ S. card {u \<in> U. S u}) T = x}) * (measure_pmf.prob (pmf_vector (random_subset V p) n) 
       {T \<in> \<llangle>power_set V\<rrangle>^n.  map_vector (\<lambda>_ S. card {u \<in> U'. S u}) T = x})"
-    by (simp only: lemma_6_3[OF assms(1,2,3,4,5,6) _ _ assms(8)] assms(6,7) 
+    by (simp only: lemma_6_3[OF assms(1,2,3,4,5,6) _ _ assms(8)] assms(6,7) \<Phi>_def
           corollary_6_4[OF assms(1,2,3,4) _ assms(8), of "card U"]
           corollary_6_4[OF assms(1,2,3,5) _ assms(8), of "card U'"], 
         simp add: mult.assoc power2_eq_square power_divide power_even_eq power_mult_distrib)
