@@ -4,7 +4,7 @@
 
 section \<open>Definitions and lemmas about shattering\<close>
 
-text \<open>In this section we introduce the predicate @{term "shatters"} and the term for the family of sets that a family shatters @{term "shattered_by"}.\<close>
+text \<open>In this section, we introduce the predicate @{term "shatters"} and the term for the family of sets that a family shatters @{term "shattered_by"}.\<close>
 
 theory Shattering
   imports Main

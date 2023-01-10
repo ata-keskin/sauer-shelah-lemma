@@ -4,7 +4,7 @@
 
 section \<open>Lemmas involving the binomial coefficient\<close>
 
-text \<open>In this section we prove lemmas that use the term for the binomial coefficient @{term choose}.\<close>
+text \<open>In this section, we prove lemmas that use the term for the binomial coefficient @{term choose}.\<close>
 
 theory Binomial_Lemmas
   imports Main
