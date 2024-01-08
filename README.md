@@ -4,4 +4,4 @@ The Sauer-Shelah Lemma is a fundamental result in extremal set theory and combin
 
 The Sauer-Shelah Lemma has found use in diverse fields such as computational geometry, approximation algorithms and machine learning. In this entry we formalize the notion of shattering and prove a general version of the Sauer-Shelah Lemma, from which the standard one follows.
 
-[View the entry on the Archive of Formal Proofs](https://www.isa-afp.org/sessions/sauer_shelah_lemma/#Sauer_Shelah_Lemma)
+#### [View the entry on the Archive of Formal Proofs](https://www.isa-afp.org/sessions/sauer_shelah_lemma/#Sauer_Shelah_Lemma)
